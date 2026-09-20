@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Outer Circular Track (Subtle translucent white) -->
+    <path
+        android:strokeColor="#33FFFFFF"
+        android:strokeWidth="4"
+        android:fillColor="#00000000"
+        android:strokeLineCap="round"
+        android:pathData="M 24,6 A 18,18 0 1,1 23.9,6" />
+
+    <!-- Active Spinning Arc (Codyar Brand Red #C0392B) -->
+    <path
+        android:strokeColor="#C0392B"
+        android:strokeWidth="4.2"
+        android:fillColor="#00000000"
+        android:strokeLineCap="round"
+        android:pathData="M 24,6 A 18,18 0 0,1 42,24" />
+
+    <!-- Secondary Accent Arc (Vibrant Amber #E5A910) -->
+    <path
+        android:strokeColor="#E5A910"
+        android:strokeWidth="4.2"
+        android:fillColor="#00000000"
+        android:strokeLineCap="round"
+        android:pathData="M 24,42 A 18,18 0 0,1 6,24" />
+
+</vector>
