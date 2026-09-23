@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -10,8 +13,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,8 +53,19 @@ fun CartDialog(
         (part?.price ?: 0.0) * qty
     }
 
+    val bankCardInfo by viewModel.bankCardInfo.collectAsState()
+    val isPurchaseLoading by viewModel.isPurchaseLoading.collectAsState()
+
+    val cardNum = bankCardInfo?.cardNumber ?: bankCardInfo?.card_number ?: "۶۱۰۴-۳۳۸۹-۶۱۱۲-۶۶۶۷"
+    val cardHolderName = bankCardInfo?.cardHolder ?: bankCardInfo?.card_holder ?: "مهدی عباسی (مدیر سایت کدیار۲۴)"
+    val bankName = bankCardInfo?.bankName ?: bankCardInfo?.bank_name ?: "بانک ملت"
+
+    var trackingNumberInput by remember { mutableStateOf("") }
+    var depositorNameInput by remember(currentUser) { mutableStateOf(currentUser?.full_name ?: "") }
+    var deliveryAddressInput by remember(currentUser) { mutableStateOf(currentUser?.address ?: currentUser?.city ?: "") }
+
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isPurchaseLoading) onDismiss() },
         title = {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -63,7 +78,7 @@ fun CartDialog(
                     fontSize = 16.sp,
                     color = CodyarNavy
                 )
-                IconButton(onClick = onDismiss) {
+                IconButton(onClick = { if (!isPurchaseLoading) onDismiss() }) {
                     Icon(Icons.Default.Close, contentDescription = "بستن")
                 }
             }
@@ -200,27 +215,98 @@ fun CartDialog(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
+                    // Manager Card Info Box for Card-to-Card Payment
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
-                        border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF4)),
+                        border = BorderStroke(1.dp, Color(0xFFBBF7D0)),
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
-                                text = "💳 پرداخت آنلاین و مستقیم در سایت",
+                                text = "💳 پرداخت به روش کارت به کارت",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = Color(0xFF1E40AF)
+                                fontSize = 12.5.sp,
+                                color = Color(0xFF166534)
                             )
                             Text(
-                                text = "جهت نهایی‌سازی سفارش و پرداخت، به درگاه پرداخت وب‌سایت کدیار۲۴ هدایت خواهید شد. پس از پرداخت آنلاین، سفارش شما ثبت شده، موجودی انبار به‌روز شده و سوابق در هر دو پنل سایت و اپلیکیشن ثبت می‌گردد.",
-                                fontSize = 11.sp,
-                                color = Color(0xFF1E40AF),
+                                text = "لطفاً مبلغ کل را به شماره کارت مدیر سایت واریز نموده و پس از واریز، کد پیگیری و نام خود را وارد کرده و دکمه «تایید و ثبت سفارش» را بزنید:",
+                                fontSize = 11.5.sp,
+                                color = Color(0xFF166534),
                                 lineHeight = 18.sp
                             )
+                            Divider(color = Color(0xFFDCFCE7), thickness = 0.8.dp)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text("شماره کارت مدیر سایت جهت واریز:", fontSize = 11.sp, color = Color(0xFF166534))
+                                    Text(
+                                        text = cardNum,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color(0xFF15803D),
+                                        letterSpacing = 1.sp
+                                    )
+                                    Text(
+                                        text = "$cardHolderName - $bankName",
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF166534)
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                        val clip = ClipData.newPlainText("Card Number", cardNum.replace("-", "").replace(" ", ""))
+                                        clipboard.setPrimaryClip(clip)
+                                        Toast.makeText(context, "شماره کارت کپی شد", Toast.LENGTH_SHORT).show()
+                                    }
+                                ) {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = "کپی شماره کارت", tint = Color(0xFF16A34A))
+                                }
+                            }
                         }
                     }
+
+                    // Input fields: Tracking code, Depositor Name, Delivery Address
+                    OutlinedTextField(
+                        value = trackingNumberInput,
+                        onValueChange = { trackingNumberInput = it },
+                        label = { Text("شماره پیگیری / کد رهگیری واریز *") },
+                        placeholder = { Text("مثلاً ۱۲۳۴۵۶۷۸") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("cart_tracking_number_input"),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = depositorNameInput,
+                        onValueChange = { depositorNameInput = it },
+                        label = { Text("نام واریزکننده (صاحب کارت)") },
+                        placeholder = { Text("مثلاً علی رضایی") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("cart_depositor_input"),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = deliveryAddressInput,
+                        onValueChange = { deliveryAddressInput = it },
+                        label = { Text("آدرس دقیق پستی جهت ارسال قطعات *") },
+                        placeholder = { Text("استان، شهر، خیابان، پلاک، کد پستی...") },
+                        maxLines = 2,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("cart_address_input"),
+                        shape = RoundedCornerShape(8.dp)
+                    )
                 }
             }
         },
@@ -230,29 +316,49 @@ fun CartDialog(
                     onClick = {
                         val user = currentUser
                         if (user == null) {
-                            Toast.makeText(context, "جهت اقدام به پرداخت و نهایی‌سازی سفارش، لطفاً ثبت‌نام یا ورود کنید.", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "جهت ثبت سفارش، لطفاً ابتدا وارد حساب کاربری شوید.", Toast.LENGTH_LONG).show()
                             onShowAuth()
-                        } else {
-                            val firstPartId = cartItemsList.firstOrNull() ?: ""
-                            val firstPart = liveSpareParts.find { it.id == firstPartId }
-                            val qty = cartQtyMap[firstPartId] ?: 1
-                            onDismiss()
-                            viewModel.initiateDirectPartPurchase(
-                                context = context,
-                                partId = firstPartId,
-                                partName = firstPart?.name ?: "قطعه سبد خرید",
-                                quantity = qty,
-                                totalPrice = cartTotal
-                            )
+                            return@Button
                         }
+                        if (trackingNumberInput.trim().length < 4) {
+                            Toast.makeText(context, "لطفاً کد رهگیری واریز به شماره کارت مدیر سایت را وارد فرمایید.", Toast.LENGTH_LONG).show()
+                            return@Button
+                        }
+                        if (deliveryAddressInput.trim().length < 5) {
+                            Toast.makeText(context, "لطفاً آدرس دقیق ارسال را وارد فرمایید.", Toast.LENGTH_LONG).show()
+                            return@Button
+                        }
+
+                        viewModel.submitPartPurchaseOrdersToServer(
+                            cardHolder = depositorNameInput.trim().ifBlank { user.full_name ?: "" },
+                            trackNumber = trackingNumberInput.trim(),
+                            address = deliveryAddressInput.trim(),
+                            onResult = { success, errorMsg ->
+                                if (success) {
+                                    onDismiss()
+                                    Toast.makeText(
+                                        context,
+                                        "سفارش شما با موفقیت ثبت شد و پس از تأیید واریزی توسط مدیر سایت، موجودی انبار به‌روز شده و سفارش آماده ارسال می‌گردد.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } else {
+                                    Toast.makeText(context, errorMsg ?: "خطا در ثبت سفارش", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        )
                     },
+                    enabled = !isPurchaseLoading,
                     colors = ButtonDefaults.buttonColors(containerColor = CodyarNavy),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("submit_order_button"),
                     shape = RoundedCornerShape(11.dp)
                 ) {
-                    Text("تایید نهایی و اتصال به درگاه پرداخت 💳", fontWeight = FontWeight.Bold)
+                    if (isPurchaseLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text("تایید و ثبت سفارش ✅", fontWeight = FontWeight.Bold)
+                    }
                 }
             } else {
                 Button(

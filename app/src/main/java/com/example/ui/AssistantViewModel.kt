@@ -2822,6 +2822,11 @@ class AssistantViewModel(
 
                     try {
                         // 1. Send store purchase request to backend API /api/store/order or /api/store/purchase
+                        val paymentNotes = if (trackNumber.isNotBlank()) {
+                            "واریز کارت به کارت - پیگیری: $finalTrackNumber - واریزکننده: $finalCardHolder"
+                        } else {
+                            "واریز کارت به کارت به حساب مدیر سایت کدیار۲۴"
+                        }
                         repository.purchasePart(
                             token = token,
                             partId = partId,
@@ -2831,7 +2836,7 @@ class AssistantViewModel(
                             totalPrice = subtotal,
                             address = finalAddress,
                             city = user?.city,
-                            notes = "پرداخت آنلاین کارت - کد پیگیری: $finalTrackNumber",
+                            notes = paymentNotes,
                             customerName = user?.full_name,
                             customerPhone = user?.phone
                         )
@@ -2844,7 +2849,7 @@ class AssistantViewModel(
                             unitPrice = price,
                             totalPrice = subtotal,
                             address = finalAddress,
-                            notes = "در انتظار تایید پرداخت سایت",
+                            notes = "واریز کارت به کارت - در انتظار تایید مدیر سایت",
                             dateStr = getCurrentPersianDate(),
                             status = "pending_payment"
                         )

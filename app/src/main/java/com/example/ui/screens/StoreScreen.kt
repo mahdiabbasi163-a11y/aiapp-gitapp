@@ -662,18 +662,21 @@ fun StoreScreen(
                                 }
                             }
 
-                            // Direct purchase and add to cart buttons pinned at the bottom
-                            Row(
+                            // Add to cart button pinned at the bottom
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(horizontal = 8.dp, vertical = 8.dp)
                             ) {
                                 Button(
                                     onClick = {
-                                        if (!outOfStock) {
-                                            selectedPartForDetails = part
+                                        if (outOfStock) return@Button
+                                        val partName = part.name ?: "این قطعه"
+                                        if (inCart) {
+                                            Toast.makeText(context, "$partName قبلاً به سبد خرید اضافه شده است", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            onAddToCart(part.id ?: "")
+                                            Toast.makeText(context, "$partName به سبد خرید اضافه شد", Toast.LENGTH_SHORT).show()
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(
@@ -681,43 +684,25 @@ fun StoreScreen(
                                         contentColor = if (outOfStock) CodyarTextSecondary else Color.White
                                     ),
                                     modifier = Modifier
-                                        .weight(1f)
+                                        .fillMaxWidth()
                                         .height(38.dp)
-                                        .testTag("buy_part_direct_button"),
+                                        .testTag("add_to_cart_button"),
                                     shape = RoundedCornerShape(8.dp),
                                     enabled = !outOfStock,
                                     contentPadding = PaddingValues(vertical = 0.dp, horizontal = 4.dp)
                                 ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ShoppingCart,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (outOfStock) "ناموجود" else "خرید آنلاین 💳",
-                                        fontSize = 11.sp,
+                                        text = if (outOfStock) "ناموجود" else "افزودن به سبد خرید",
+                                        fontSize = 11.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1
                                     )
-                                }
-
-                                Surface(
-                                    onClick = { if (!outOfStock) onAddToCart(part.id ?: "") },
-                                    enabled = !outOfStock,
-                                    modifier = Modifier.size(38.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (inCart) Color(0xFFEAFAF1) else Color(0xFFF0F2F5),
-                                    border = BorderStroke(
-                                        width = 1.dp,
-                                        color = if (inCart) Color(0xFFA9DFBF) else Color(0xFFE2E8F0)
-                                    )
-                                ) {
-                                    Box(
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = if (inCart) Icons.Default.Check else Icons.Default.ShoppingCart,
-                                            contentDescription = "افزودن به سبد خرید",
-                                            tint = if (inCart) Color(0xFF1E8449) else CodyarNavy,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
                                 }
                             }
                         }
@@ -736,18 +721,6 @@ fun StoreScreen(
             val unitPrice = detailPart.price ?: 0.0
             val totalPrice = unitPrice * selectedQty
 
-            val defaultAddress = remember(currentUser) {
-                val cityPart = currentUser?.city?.takeIf { it.isNotBlank() }
-                val addressPart = currentUser?.address?.takeIf { it.isNotBlank() }
-                when {
-                    !cityPart.isNullOrBlank() && !addressPart.isNullOrBlank() -> "$cityPart، $addressPart"
-                    !addressPart.isNullOrBlank() -> addressPart
-                    !cityPart.isNullOrBlank() -> "$cityPart، "
-                    else -> ""
-                }
-            }
-            var deliveryAddress by remember(detailPart.id, currentUser) { mutableStateOf(defaultAddress) }
-
             AlertDialog(
                 onDismissRequest = { selectedPartForDetails = null },
                 title = {
@@ -757,7 +730,7 @@ fun StoreScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "مشخصات و خرید قطعه",
+                            text = "مشخصات قطعه",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = CodyarNavy
@@ -924,37 +897,6 @@ fun StoreScreen(
                                 }
                             }
 
-                            // Delivery Address Input
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "📍 آدرس دقیق پستی جهت تحویل قطعه:",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = CodyarNavy,
-                                    textAlign = TextAlign.Right,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                OutlinedTextField(
-                                    value = deliveryAddress,
-                                    onValueChange = { deliveryAddress = it },
-                                    placeholder = { Text("استان، شهر، خیابان، کوچه، پلاک و واحد...", fontSize = 11.sp, color = Color.Gray) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(8.dp),
-                                    minLines = 2,
-                                    maxLines = 3,
-                                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.5.sp),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedContainerColor = Color(0xFFFAFAFA),
-                                        unfocusedContainerColor = Color(0xFFFAFAFA),
-                                        focusedBorderColor = CodyarNavy,
-                                        unfocusedBorderColor = Color(0xFFCBD5E1)
-                                    )
-                                )
-                            }
-
                             // Total Price Row
                             Row(
                                 modifier = Modifier
@@ -982,49 +924,25 @@ fun StoreScreen(
                 },
                 confirmButton = {
                     if (!isOutOfStock) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Button(
-                                onClick = {
-                                    if (currentUser == null) {
-                                        Toast.makeText(context, "لطفاً ابتدا وارد حساب کاربری خود شوید.", Toast.LENGTH_SHORT).show()
-                                    } else if (deliveryAddress.trim().length < 5) {
-                                        Toast.makeText(context, "لطفاً آدرس دقیق ارسال پستی را وارد فرمایید.", Toast.LENGTH_LONG).show()
-                                    } else {
-                                        val partId = detailPart.id ?: ""
-                                        val partName = detailPart.name ?: "قطعه"
-                                        selectedPartForDetails = null
-                                        viewModel.initiateDirectPartPurchase(
-                                            context = context,
-                                            partId = partId,
-                                            partName = partName,
-                                            quantity = selectedQty,
-                                            totalPrice = totalPrice,
-                                            deliveryAddress = deliveryAddress.trim()
-                                        )
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = CodyarNavy),
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Text("خرید اینترنتی و ارسال پستی 💳", fontWeight = FontWeight.Bold)
-                            }
-
-                            OutlinedButton(
-                                onClick = {
-                                    val partId = detailPart.id ?: ""
+                        val partId = detailPart.id ?: ""
+                        val isDetailPartInCart = cartItems.contains(partId)
+                        Button(
+                            onClick = {
+                                val partName = detailPart.name ?: "این قطعه"
+                                if (isDetailPartInCart) {
+                                    Toast.makeText(context, "$partName در سبد خرید موجود است. برای تغییر تعداد وارد سبد خرید شوید.", Toast.LENGTH_SHORT).show()
+                                    selectedPartForDetails = null
+                                } else {
                                     viewModel.addToCartWithQty(partId, selectedQty)
                                     selectedPartForDetails = null
-                                    Toast.makeText(context, "قطعه به سبد خرید اضافه شد 🛒", Toast.LENGTH_SHORT).show()
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Text("افزودن به سبد خرید 🛒", fontWeight = FontWeight.Bold)
-                            }
+                                    Toast.makeText(context, "$partName به سبد خرید اضافه شد 🛒", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = CodyarNavy),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("افزودن به سبد خرید 🛒", fontWeight = FontWeight.Bold)
                         }
                     } else {
                         Button(
